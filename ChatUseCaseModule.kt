@@ -2,8 +2,8 @@ package com.sarang.torang.di.chat_di
 
 import android.text.TextUtils
 import com.sarang.torang.BuildConfig
-import com.sarang.torang.compose.ChatRoomUiState
-import com.sarang.torang.compose.ChatUiState
+import com.sarang.torang.compose.chatroom.ChatRoomUiState
+import com.sarang.torang.compose.chatroom.ChatUiState
 import com.sarang.torang.data.dao.LoggedInUserDao
 import com.sarang.torang.repository.ChatRepository
 import com.sarang.torang.usecase.GetChatRoomUseCase
