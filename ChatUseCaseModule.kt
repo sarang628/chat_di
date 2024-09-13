@@ -4,10 +4,13 @@ import android.text.TextUtils
 import com.sarang.torang.BuildConfig
 import com.sarang.torang.compose.chatroom.ChatRoomUiState
 import com.sarang.torang.compose.chatroom.ChatUiState
+import com.sarang.torang.data.ChatUser
+import com.sarang.torang.data.dao.ChatDao
 import com.sarang.torang.data.dao.LoggedInUserDao
 import com.sarang.torang.repository.ChatRepository
 import com.sarang.torang.usecase.GetChatRoomUseCase
 import com.sarang.torang.usecase.GetChatUseCase
+import com.sarang.torang.usecase.GetUserByRoomIdUseCase
 import com.sarang.torang.usecase.LoadChatRoomUseCase
 import dagger.Module
 import dagger.Provides
@@ -34,15 +37,21 @@ class ChatUseCaseModule {
                         list.map { chatRoomEntity ->
                             ChatRoomUiState(
                                 chatRoomEntity.chatRoomEntity.roomId,
-                                TextUtils.join(
-                                    ",",
-                                    chatRoomEntity.participantsWithUsers
-                                        .filter { it.userEntity.userId != loggedInUser?.userId }
-                                        .map { it.userEntity.userName }),
-                                "25 min ago",
-                                BuildConfig.PROFILE_IMAGE_SERVER_URL + chatRoomEntity.participantsWithUsers
-                                    .filter { it.userEntity.userId != loggedInUser?.userId }
-                                    .map { it.userEntity.profilePicUrl }[0]
+                                list = chatRoomEntity.participantsWithUsers
+                                    .filter {
+                                        !TextUtils.equals(
+                                            loggedInUser?.userName,
+                                            it.userEntity.userName
+                                        )
+                                    }
+                                    .map {
+                                        ChatUser(
+                                            nickName = it.userEntity.userName,
+                                            profileUrl = BuildConfig.PROFILE_IMAGE_SERVER_URL + it.userEntity.profilePicUrl,
+                                            id = it.userEntity.userName
+                                        )
+                                    },
+                                seenTime = "25 min ago",
                             )
                         }
                     }
@@ -70,6 +79,35 @@ class ChatUseCaseModule {
                         ChatUiState.Success()
                     }
                 }
+            }
+        }
+    }
+
+    @Singleton
+    @Provides
+    fun provideGetUserUseCase(
+        chatDao: ChatDao,
+        loggedInUserDao: LoggedInUserDao,
+    ): GetUserByRoomIdUseCase {
+        return object : GetUserByRoomIdUseCase {
+            override fun invoke(roomId: Int): Flow<List<ChatUser>> {
+                return loggedInUserDao.getLoggedInUser()
+                    .combine(chatDao.getParticipantsWithUsers(roomId)) { loggedInUser, list ->
+                        list
+                            .filter {
+                                !TextUtils.equals(
+                                    loggedInUser?.userName,
+                                    it.userEntity.userName
+                                )
+                            }
+                            .map {
+                                ChatUser(
+                                    nickName = it.userEntity.userName,
+                                    profileUrl = BuildConfig.PROFILE_IMAGE_SERVER_URL + it.userEntity.profilePicUrl,
+                                    id = it.userEntity.userName
+                                )
+                            }
+                    }
             }
         }
     }
