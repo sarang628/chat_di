@@ -7,10 +7,12 @@ import com.sarang.torang.compose.chatroom.ChatUiState
 import com.sarang.torang.data.ChatUser
 import com.sarang.torang.data.dao.ChatDao
 import com.sarang.torang.data.dao.LoggedInUserDao
+import com.sarang.torang.data.entity.ChatRoomWithParticipantsEntity
 import com.sarang.torang.repository.ChatRepository
 import com.sarang.torang.usecase.GetChatRoomUseCase
 import com.sarang.torang.usecase.GetChatUseCase
 import com.sarang.torang.usecase.GetUserByRoomIdUseCase
+import com.sarang.torang.usecase.GetUserOrCreateRoomByUserIdUseCase
 import com.sarang.torang.usecase.LoadChatRoomUseCase
 import dagger.Module
 import dagger.Provides
@@ -20,6 +22,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import javax.inject.Singleton
+import kotlin.math.log
 
 @InstallIn(SingletonComponent::class)
 @Module
@@ -90,17 +93,16 @@ class ChatUseCaseModule {
         loggedInUserDao: LoggedInUserDao,
     ): GetUserByRoomIdUseCase {
         return object : GetUserByRoomIdUseCase {
-            override fun invoke(roomId: Int): Flow<List<ChatUser>> {
+            override fun invoke(roomId: Int): Flow<List<ChatUser>?> {
                 return loggedInUserDao.getLoggedInUser()
-                    .combine(chatDao.getParticipantsWithUsers(roomId)) { loggedInUser, list ->
-                        list
-                            .filter {
-                                !TextUtils.equals(
-                                    loggedInUser?.userName,
-                                    it.userEntity.userName
-                                )
-                            }
-                            .map {
+                    .combine(chatDao.getParticipantsWithUsersFlow(roomId)) { loggedInUser, list ->
+                        list?.filter {
+                            !TextUtils.equals(
+                                loggedInUser?.userName,
+                                it.userEntity.userName
+                            )
+                        }
+                            ?.map {
                                 ChatUser(
                                     nickName = it.userEntity.userName,
                                     profileUrl = BuildConfig.PROFILE_IMAGE_SERVER_URL + it.userEntity.profilePicUrl,
@@ -108,6 +110,30 @@ class ChatUseCaseModule {
                                 )
                             }
                     }
+            }
+        }
+    }
+
+    @Singleton
+    @Provides
+    fun provideGetUserOrCreateRoomByUserIdUseCase(
+        chatDao: ChatDao,
+        loggedInUserDao: LoggedInUserDao,
+        chatRepository: ChatRepository,
+    ): GetUserOrCreateRoomByUserIdUseCase {
+        return object : GetUserOrCreateRoomByUserIdUseCase {
+            override suspend fun invoke(userId: Int): Int {
+
+                //로컬 DB에 1:1 채팅방 있는지 확인
+                var chatUser: ChatRoomWithParticipantsEntity? = chatDao.getChatRoomByUserId(userId)
+
+                //없다면 서버에 채팅방 생성 요청
+                if (chatUser == null) {
+                    chatRepository.getUserOrCreateRoomByUserId(userId)
+                    chatUser = chatDao.getChatRoomByUserId(userId)
+                }
+
+                return chatUser?.chatRoomEntity?.roomId ?: throw Exception("채팅방 생성에 실패하였습니다.")
             }
         }
     }
