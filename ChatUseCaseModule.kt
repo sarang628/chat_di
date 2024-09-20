@@ -3,10 +3,11 @@ package com.sarang.torang.di.chat_di
 import android.text.TextUtils
 import com.sarang.torang.BuildConfig
 import com.sarang.torang.compose.chatroom.ChatRoomUiState
-import com.sarang.torang.compose.chatroom.ChatUiState
+import com.sarang.torang.data.Chat
 import com.sarang.torang.data.ChatUser
 import com.sarang.torang.data.dao.ChatDao
 import com.sarang.torang.data.dao.LoggedInUserDao
+import com.sarang.torang.data.entity.ChatEntityWithUser
 import com.sarang.torang.data.entity.ChatRoomWithParticipantsEntity
 import com.sarang.torang.repository.ChatRepository
 import com.sarang.torang.usecase.GetChatRoomUseCase
@@ -14,15 +15,15 @@ import com.sarang.torang.usecase.GetChatUseCase
 import com.sarang.torang.usecase.GetUserByRoomIdUseCase
 import com.sarang.torang.usecase.GetUserOrCreateRoomByUserIdUseCase
 import com.sarang.torang.usecase.LoadChatRoomUseCase
+import com.sarang.torang.usecase.LoadChatUseCase
+import com.sarang.torang.usecase.SendChatUseCase
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
 import javax.inject.Singleton
-import kotlin.math.log
 
 @InstallIn(SingletonComponent::class)
 @Module
@@ -74,16 +75,32 @@ class ChatUseCaseModule {
 
     @Singleton
     @Provides
-    fun provideGetChatUseCase(chatRepository: ChatRepository): GetChatUseCase {
+    fun provideGetChatUseCase(
+        chatRepository: ChatRepository,
+        loggedInUserDao: LoggedInUserDao,
+    ): GetChatUseCase {
         return object : GetChatUseCase {
-            override fun invoke(roomId: Int): Flow<List<ChatUiState>> {
-                return chatRepository.getContents(roomId).map { list ->
-                    list.map { chatEntity ->
-                        ChatUiState.Success()
+            override fun invoke(roomId: Int): Flow<List<Chat>> {
+                return chatRepository.getContents(roomId)
+                    .combine(loggedInUserDao.getLoggedInUser()) { list, loggedInUser ->
+                        list.map { chatEntity ->
+                            chatEntity.toChat(chatEntity.userEntity.userId == loggedInUser?.userId)
+                        }
                     }
-                }
             }
         }
+    }
+
+    private fun ChatEntityWithUser.toChat(isMe: Boolean): Chat {
+        return Chat(
+            userId = this.chatEntity.userId,
+            message = this.chatEntity.message,
+            createDate = this.chatEntity.createDate,
+            profileUrl = BuildConfig.PROFILE_IMAGE_SERVER_URL + this.userEntity.profilePicUrl,
+            userName = this.userEntity.userName,
+            isMe = isMe,
+            isSending = this.chatEntity.sending
+        )
     }
 
     @Singleton
@@ -137,4 +154,29 @@ class ChatUseCaseModule {
             }
         }
     }
+
+    @Singleton
+    @Provides
+    fun provideSendChatUseCase(
+        chatRepository: ChatRepository,
+    ): SendChatUseCase {
+        return object : SendChatUseCase {
+            override suspend fun invoke(roomId: Int, message: String) {
+                chatRepository.addChat(roomId, message)
+            }
+        }
+    }
+
+    @Singleton
+    @Provides
+    fun provideLoadChatUseCase(
+        chatRepository: ChatRepository,
+    ): LoadChatUseCase {
+        return object : LoadChatUseCase {
+            override suspend fun invoke(roomId: Int) {
+                chatRepository.loadContents(roomId)
+            }
+        }
+    }
+
 }

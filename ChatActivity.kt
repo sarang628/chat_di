@@ -16,10 +16,7 @@ class ChatActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        val userId = intent.getIntExtra("userId", -1)
         val roomId = intent.getIntExtra("roomId", -1)
-
-        Log.d("__ChatActivity", "userId : $userId")
         Log.d("__ChatActivity", "roomId : $roomId")
 
         setContent {
@@ -28,7 +25,6 @@ class ChatActivity : ComponentActivity() {
                     onBack = {
                         finish()
                     }, image = provideTorangAsyncImage(),
-                    userId = userId,
                     roomId = roomId
                 )
             }
