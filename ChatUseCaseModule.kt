@@ -14,15 +14,23 @@ import com.sarang.torang.usecase.GetChatRoomUseCase
 import com.sarang.torang.usecase.GetChatUseCase
 import com.sarang.torang.usecase.GetUserByRoomIdUseCase
 import com.sarang.torang.usecase.GetUserOrCreateRoomByUserIdUseCase
+import com.sarang.torang.usecase.IsSignInUseCase
 import com.sarang.torang.usecase.LoadChatRoomUseCase
 import com.sarang.torang.usecase.LoadChatUseCase
 import com.sarang.torang.usecase.SendChatUseCase
+import com.sarang.torang.usecase.SetSocketCloseUseCase
+import com.sarang.torang.usecase.SetSocketListenerUseCase
+import com.sarang.torang.usecase.SubScribeRoomUseCase
+import com.sarang.torang.usecase.WebSocketListener
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
+import okhttp3.Response
+import okhttp3.WebSocket
 import javax.inject.Singleton
 
 @InstallIn(SingletonComponent::class)
@@ -38,25 +46,29 @@ class ChatUseCaseModule {
             override fun invoke(): Flow<List<ChatRoomUiState>> {
                 return loggedInUserDao.getLoggedInUser()
                     .combine(chatRepository.getChatRoomsWithParticipantsAndUsers()) { loggedInUser, list ->
-                        list.map { chatRoomEntity ->
-                            ChatRoomUiState(
-                                chatRoomEntity.chatRoomEntity.roomId,
-                                list = chatRoomEntity.participantsWithUsers
-                                    .filter {
-                                        !TextUtils.equals(
-                                            loggedInUser?.userName,
-                                            it.userEntity.userName
-                                        )
-                                    }
-                                    .map {
-                                        ChatUser(
-                                            nickName = it.userEntity.userName,
-                                            profileUrl = BuildConfig.PROFILE_IMAGE_SERVER_URL + it.userEntity.profilePicUrl,
-                                            id = it.userEntity.userName
-                                        )
-                                    },
-                                seenTime = "25 min ago",
-                            )
+                        if (loggedInUser == null) {
+                            mutableListOf()
+                        } else {
+                            list.map { chatRoomEntity ->
+                                ChatRoomUiState(
+                                    chatRoomEntity.chatRoomEntity.roomId,
+                                    list = chatRoomEntity.participantsWithUsers
+                                        .filter {
+                                            !TextUtils.equals(
+                                                loggedInUser.userName,
+                                                it.userName
+                                            )
+                                        }
+                                        .map {
+                                            ChatUser(
+                                                nickName = it.userName,
+                                                profileUrl = BuildConfig.PROFILE_IMAGE_SERVER_URL + it.profilePicUrl,
+                                                id = it.userName
+                                            )
+                                        },
+                                    seenTime = "25 min ago",
+                                )
+                            }
                         }
                     }
             }
@@ -179,4 +191,66 @@ class ChatUseCaseModule {
         }
     }
 
+    @Singleton
+    @Provides
+    fun provideIsSignInUseCase(
+        loggedInUserDao: LoggedInUserDao,
+    ): IsSignInUseCase {
+        return object : IsSignInUseCase {
+            override fun invoke(): Flow<Boolean> {
+                return loggedInUserDao.isLogin().map { it > 0 }
+            }
+        }
+    }
+
+    @Singleton
+    @Provides
+    fun provideSetSocketListenerUseCase(
+        chatRepository: ChatRepository,
+    ): SetSocketListenerUseCase {
+        return object : SetSocketListenerUseCase {
+            override fun invoke(webSocketListener: WebSocketListener) {
+
+                chatRepository.setListener(object : okhttp3.WebSocketListener() {
+                    override fun onOpen(webSocket: WebSocket, response: Response) {
+                        super.onOpen(webSocket, response)
+                        webSocketListener.onOpen()
+                    }
+
+                    override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
+                        super.onClosed(webSocket, code, reason)
+                        webSocketListener.onClosed()
+                    }
+                })
+
+                chatRepository.connectSocket()
+            }
+        }
+    }
+
+    @Singleton
+    @Provides
+    fun provideSetSocketCloseUseCase(
+        chatRepository: ChatRepository,
+    ): SetSocketCloseUseCase {
+        return object : SetSocketCloseUseCase {
+            override fun invoke() {
+                chatRepository.closeConnection()
+            }
+        }
+    }
+
+    @Singleton
+    @Provides
+    fun provideSubScribeRoomUseCase(
+        chatRepository: ChatRepository,
+    ): SubScribeRoomUseCase {
+        return object : SubScribeRoomUseCase {
+            override suspend fun invoke(roomId: Int) {
+                chatRepository.openChatRoom(roomId).collect {
+
+                }
+            }
+        }
+    }
 }
