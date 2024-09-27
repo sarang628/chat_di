@@ -19,13 +19,13 @@ import com.sarang.torang.usecase.LoadChatRoomUseCase
 import com.sarang.torang.usecase.LoadChatUseCase
 import com.sarang.torang.usecase.SendChatUseCase
 import com.sarang.torang.usecase.SetSocketCloseUseCase
-import com.sarang.torang.usecase.SetSocketListenerUseCase
 import com.sarang.torang.usecase.SubScribeRoomUseCase
 import com.sarang.torang.usecase.WebSocketListener
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
@@ -205,37 +205,12 @@ class ChatUseCaseModule {
 
     @Singleton
     @Provides
-    fun provideSetSocketListenerUseCase(
-        chatRepository: ChatRepository,
-    ): SetSocketListenerUseCase {
-        return object : SetSocketListenerUseCase {
-            override fun invoke(webSocketListener: WebSocketListener) {
-
-                chatRepository.setListener(object : okhttp3.WebSocketListener() {
-                    override fun onOpen(webSocket: WebSocket, response: Response) {
-                        super.onOpen(webSocket, response)
-                        webSocketListener.onOpen()
-                    }
-
-                    override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
-                        super.onClosed(webSocket, code, reason)
-                        webSocketListener.onClosed()
-                    }
-                })
-
-                chatRepository.connectSocket()
-            }
-        }
-    }
-
-    @Singleton
-    @Provides
     fun provideSetSocketCloseUseCase(
         chatRepository: ChatRepository,
     ): SetSocketCloseUseCase {
         return object : SetSocketCloseUseCase {
-            override fun invoke() {
-                chatRepository.closeConnection()
+            override fun invoke(roomId: Int) {
+                chatRepository.unSubscribe(roomId)
             }
         }
     }
@@ -246,9 +221,16 @@ class ChatUseCaseModule {
         chatRepository: ChatRepository,
     ): SubScribeRoomUseCase {
         return object : SubScribeRoomUseCase {
-            override suspend fun invoke(roomId: Int) {
-                chatRepository.openChatRoom(roomId).collect {
-
+            override suspend fun invoke(
+                roomId: Int,
+                coroutineScope: CoroutineScope,
+            ): Flow<HashMap<String, String>> {
+                chatRepository.openChatRoom(roomId)
+                return chatRepository.event(coroutineScope).map {
+                    java.util.HashMap<String, String>().apply {
+                        put("command", it.command ?: "")
+                        put("payload", it.payload ?: "")
+                    }
                 }
             }
         }
