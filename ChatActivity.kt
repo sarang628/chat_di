@@ -8,7 +8,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.annotation.RequiresApi
 import com.google.samples.apps.sunflower.ui.TorangTheme
-import com.sarang.instagralleryModule.GalleryNavHost
+import com.sarang.instagralleryModule.compose.GalleryBottomSheet
+import com.sarang.instagralleryModule.compose.GalleryNavHost
 import com.sarang.torang.compose.bottomsheet.ImageSelectBottomSheetScaffold
 import com.sarang.torang.compose.chat.ChatScreen
 import com.sarang.torang.di.image.provideTorangAsyncImage
@@ -31,14 +32,28 @@ class ChatActivity : ComponentActivity() {
                     image = provideTorangAsyncImage(),
                     roomId = roomId,
                     galleryCompose = {
-                        GalleryNavHost(onNext = {}, onClose = { /*TODO*/ }, onBack = {})
+                        GalleryNavHost(
+                            onNext = {},
+                            onClose = { /*TODO*/ },
+                            onBack = {},
+                            galleryType = 1
+                        )
                     },
                     galleryBottomSheetScaffoldCompose =
-                    { show, onHidden, sheetContent, content ->
-                        ImageSelectBottomSheetScaffold(
+                    { show, onHidden, onSend, sheetContent, content ->
+                        GalleryBottomSheet(
+                            imageSelectBottomSheetScaffold = { show, onHidden, sheetContent, content ->
+                                ImageSelectBottomSheetScaffold(
+                                    show = show,
+                                    onHidden = onHidden,
+                                    imageSelectCompose = sheetContent,
+                                    content = content
+                                )
+                            },
+                            onSend = onSend,
                             show = show,
                             onHidden = onHidden,
-                            imageSelectCompose = sheetContent,
+                            onBack = {},
                             content = content
                         )
                     }
