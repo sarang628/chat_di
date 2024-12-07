@@ -225,7 +225,7 @@ class ChatUseCaseModule {
                 roomId: Int,
                 coroutineScope: CoroutineScope,
             ): Flow<HashMap<String, String>> {
-                chatRepository.openChatRoom(roomId)
+                chatRepository.subscribe(roomId)
                 return chatRepository.event(coroutineScope).map {
                     java.util.HashMap<String, String>().apply {
                         put("command", it.command ?: "")
