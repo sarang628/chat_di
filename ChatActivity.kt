@@ -8,9 +8,6 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.annotation.RequiresApi
 import com.google.samples.apps.sunflower.ui.TorangTheme
-import com.sarang.instagralleryModule.compose.GalleryBottomSheet
-import com.sarang.instagralleryModule.compose.GalleryNavHost
-import com.sarang.torang.compose.bottomsheet.ImageSelectBottomSheetScaffold
 import com.sarang.torang.compose.chat.ChatScreen
 import com.sarang.torang.di.image.provideTorangAsyncImage
 import dagger.hilt.android.AndroidEntryPoint
@@ -32,16 +29,16 @@ class ChatActivity : ComponentActivity() {
                     image = provideTorangAsyncImage(),
                     roomId = roomId,
                     galleryCompose = {
-                        GalleryNavHost(
+                        /*GalleryNavHost(
                             onNext = {},
-                            onClose = { /*TODO*/ },
+                            onClose = { *//*TODO*//* },
                             onBack = {},
                             galleryType = 1
-                        )
+                        )*/
                     },
                     galleryBottomSheetScaffoldCompose =
                     { show, onHidden, onSend, sheetContent, content ->
-                        GalleryBottomSheet(
+                        /*GalleryBottomSheet(
                             imageSelectBottomSheetScaffold = { show, onHidden, sheetContent, content ->
                                 ImageSelectBottomSheetScaffold(
                                     show = show,
@@ -55,7 +52,7 @@ class ChatActivity : ComponentActivity() {
                             onHidden = onHidden,
                             onBack = {},
                             content = content
-                        )
+                        )*/
                     }
                 )
             }
