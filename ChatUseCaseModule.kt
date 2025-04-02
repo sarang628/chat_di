@@ -147,7 +147,6 @@ class ChatUseCaseModule {
     @Provides
     fun provideGetUserOrCreateRoomByUserIdUseCase(
         chatDao: ChatDao,
-        loggedInUserDao: LoggedInUserDao,
         chatRepository: ChatRepository,
     ): GetUserOrCreateRoomByUserIdUseCase {
         return object : GetUserOrCreateRoomByUserIdUseCase {

@@ -37,7 +37,7 @@ class ChatActivity : ComponentActivity() {
                         )*/
                     },
                     galleryBottomSheetScaffoldCompose =
-                    { show, onHidden, onSend, sheetContent, content ->
+                    { _, _, _, _, _ ->
                         /*GalleryBottomSheet(
                             imageSelectBottomSheetScaffold = { show, onHidden, sheetContent, content ->
                                 ImageSelectBottomSheetScaffold(
