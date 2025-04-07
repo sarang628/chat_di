@@ -7,10 +7,10 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.annotation.RequiresApi
-import com.google.samples.apps.sunflower.ui.TorangTheme
 import com.sarang.torang.compose.chat.ChatScreen
 import com.sarang.torang.di.image.provideTorangAsyncImage
 import dagger.hilt.android.AndroidEntryPoint
+import com.sryang.torang.ui.TorangTheme
 
 @AndroidEntryPoint
 class ChatActivity : ComponentActivity() {
