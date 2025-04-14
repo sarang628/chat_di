@@ -1,5 +1,7 @@
 package com.sarang.torang.di.chat_di
 
+import android.content.Context
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -37,25 +39,33 @@ class ChatActivity : ComponentActivity() {
                         )*/
                     },
                     galleryBottomSheetScaffoldCompose =
-                    { _, _, _, _, _ ->
-                        /*GalleryBottomSheet(
-                            imageSelectBottomSheetScaffold = { show, onHidden, sheetContent, content ->
-                                ImageSelectBottomSheetScaffold(
-                                    show = show,
-                                    onHidden = onHidden,
-                                    imageSelectCompose = sheetContent,
-                                    content = content
-                                )
-                            },
-                            onSend = onSend,
-                            show = show,
-                            onHidden = onHidden,
-                            onBack = {},
-                            content = content
-                        )*/
-                    }
+                        { _, _, _, _, _ ->
+                            /*GalleryBottomSheet(
+                                imageSelectBottomSheetScaffold = { show, onHidden, sheetContent, content ->
+                                    ImageSelectBottomSheetScaffold(
+                                        show = show,
+                                        onHidden = onHidden,
+                                        imageSelectCompose = sheetContent,
+                                        content = content
+                                    )
+                                },
+                                onSend = onSend,
+                                show = show,
+                                onHidden = onHidden,
+                                onBack = {},
+                                content = content
+                            )*/
+                        }
                 )
             }
+        }
+    }
+
+    companion object {
+        fun go(context: Context, roomId: Int) {
+            context.startActivity(Intent(context, ChatActivity::class.java).apply {
+                putExtra("roomId", roomId)
+            })
         }
     }
 }

@@ -10,9 +10,11 @@ import com.sarang.torang.di.image.provideTorangAsyncImage
 import com.sarang.torang.di.pulltorefresh.providePullToRefreshLayout
 import com.sryang.library.pullrefresh.PullToRefreshLayoutState
 import com.sryang.library.pullrefresh.RefreshIndicatorState
+import com.sryang.library.pullrefresh.rememberPullToRefreshState
 import kotlinx.coroutines.launch
 
-fun provideChatScreen(state: PullToRefreshLayoutState): @Composable () -> Unit = {
+fun provideChatScreen(): @Composable () -> Unit = {
+    val state = rememberPullToRefreshState()
     val context = LocalContext.current
     val coroutine = rememberCoroutineScope()
     val dispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
