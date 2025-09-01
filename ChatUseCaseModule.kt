@@ -5,10 +5,10 @@ import com.sarang.torang.BuildConfig
 import com.sarang.torang.compose.chatroom.ChatRoomUiState
 import com.sarang.torang.data.Chat
 import com.sarang.torang.data.ChatUser
-import com.sarang.torang.data.dao.ChatDao
-import com.sarang.torang.data.dao.LoggedInUserDao
-import com.sarang.torang.data.entity.ChatEntityWithUser
-import com.sarang.torang.data.entity.ChatRoomWithParticipantsEntity
+import com.sarang.torang.core.database.dao.ChatDao
+import com.sarang.torang.core.database.dao.LoggedInUserDao
+import com.sarang.torang.core.database.model.chat.ChatEntityWithUser
+import com.sarang.torang.core.database.model.chat.ChatRoomWithParticipantsEntity
 import com.sarang.torang.repository.ChatRepository
 import com.sarang.torang.usecase.GetChatRoomUseCase
 import com.sarang.torang.usecase.GetChatUseCase
