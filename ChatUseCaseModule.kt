@@ -3,13 +3,13 @@ package com.sarang.torang.di.chat_di
 import android.text.TextUtils
 import com.sarang.torang.BuildConfig
 import com.sarang.torang.compose.chatroom.ChatRoomUiState
-import com.sarang.torang.data.Chat
-import com.sarang.torang.data.ChatUser
-import com.sarang.torang.core.database.dao.ChatDao
 import com.sarang.torang.core.database.dao.LoggedInUserDao
-import com.sarang.torang.core.database.model.chat.ChatEntityWithUser
-import com.sarang.torang.core.database.model.chat.ChatRoomWithParticipantsEntity
+import com.sarang.torang.data.Chat
+import com.sarang.torang.data.ChatMessage
+import com.sarang.torang.data.ChatRoom
+import com.sarang.torang.data.ChatUser
 import com.sarang.torang.repository.ChatRepository
+import com.sarang.torang.repository.LoginRepository
 import com.sarang.torang.usecase.GetChatRoomUseCase
 import com.sarang.torang.usecase.GetChatUseCase
 import com.sarang.torang.usecase.GetUserByRoomIdUseCase
@@ -20,7 +20,6 @@ import com.sarang.torang.usecase.LoadChatUseCase
 import com.sarang.torang.usecase.SendChatUseCase
 import com.sarang.torang.usecase.SetSocketCloseUseCase
 import com.sarang.torang.usecase.SubScribeRoomUseCase
-import com.sarang.torang.usecase.WebSocketListener
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -28,9 +27,9 @@ import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import okhttp3.Response
-import okhttp3.WebSocket
 import javax.inject.Singleton
 
 @InstallIn(SingletonComponent::class)
@@ -40,25 +39,23 @@ class ChatUseCaseModule {
     @Provides
     fun provideGetChatRoomUseCase(
         chatRepository: ChatRepository,
-        loggedInUserDao: LoggedInUserDao,
+        loginRepository: LoginRepository,
     ): GetChatRoomUseCase {
         return object : GetChatRoomUseCase {
+            val isLoginFlow = loginRepository.isLogin
+            val userNameFlow = loginRepository.getUserName()
+            val chatRooms = chatRepository.getAllChatRoomsFlow()
+
             override fun invoke(): Flow<List<ChatRoomUiState>> {
-                return loggedInUserDao.getLoggedInUser()
-                    .combine(chatRepository.getChatRoomsWithParticipantsAndUsers()) { loggedInUser, list ->
-                        if (loggedInUser == null) {
+                return combine(isLoginFlow, userNameFlow, chatRooms) { isLogin, userName, list ->
+                        if (!isLogin) {
                             mutableListOf()
                         } else {
                             list.map { chatRoomEntity ->
                                 ChatRoomUiState(
-                                    chatRoomEntity.chatRoomEntity.roomId,
-                                    list = chatRoomEntity.participantsWithUsers
-                                        .filter {
-                                            !TextUtils.equals(
-                                                loggedInUser.userName,
-                                                it.userName
-                                            )
-                                        }
+                                    chatRoomEntity.roomId,
+                                    list = chatRoomEntity.chatParticipants
+                                        .filter { !TextUtils.equals(userName, it.userName) }
                                         .map {
                                             ChatUser(
                                                 nickName = it.userName,
@@ -80,7 +77,7 @@ class ChatUseCaseModule {
     fun provideLoadChatRoomUseCase(chatRepository: ChatRepository): LoadChatRoomUseCase {
         return object : LoadChatRoomUseCase {
             override suspend fun invoke() {
-                return chatRepository.loadChatRoom()
+                return chatRepository.refreshAllChatRooms()
             }
         }
     }
@@ -93,67 +90,66 @@ class ChatUseCaseModule {
     ): GetChatUseCase {
         return object : GetChatUseCase {
             override fun invoke(roomId: Int): Flow<List<Chat>> {
-                return chatRepository.getContents(roomId)
+                return chatRepository.getChatsFlow(roomId)
                     .combine(loggedInUserDao.getLoggedInUser()) { list, loggedInUser ->
                         list.map { chatEntity ->
-                            chatEntity.toChat(chatEntity.userEntity.userId == loggedInUser?.userId)
+                            chatEntity.toChat(chatEntity.userId == loggedInUser?.userId)
                         }
                     }
             }
         }
     }
 
-    private fun ChatEntityWithUser.toChat(isMe: Boolean): Chat {
+    private fun ChatMessage.toChat(isMe: Boolean): Chat {
         return Chat(
-            userId = this.chatEntity.userId,
-            message = this.chatEntity.message,
-            createDate = this.chatEntity.createDate,
-            profileUrl = BuildConfig.PROFILE_IMAGE_SERVER_URL + this.userEntity.profilePicUrl,
-            userName = this.userEntity.userName,
+            userId = this.userId,
+            message = this.message,
+            createDate = this.createDate,
+            profileUrl = BuildConfig.PROFILE_IMAGE_SERVER_URL + this.user.profilePicUrl,
+            userName = this.user.userName,
             isMe = isMe,
-            isSending = this.chatEntity.sending
+            isSending = this.sending
         )
     }
 
     @Singleton
     @Provides
     fun provideGetUserUseCase(
-        chatDao: ChatDao,
-        loggedInUserDao: LoggedInUserDao,
+        chatRepository: ChatRepository,
+        loginRepository: LoginRepository,
     ): GetUserByRoomIdUseCase {
         return object : GetUserByRoomIdUseCase {
             override fun invoke(roomId: Int): Flow<List<ChatUser>?> {
-                return loggedInUserDao.getLoggedInUser()
-                    .combine(chatDao.getParticipantsWithUsersFlow(roomId)) { loggedInUser, list ->
-                        list?.filter {
-                            !TextUtils.equals(
-                                loggedInUser?.userName,
-                                it.userEntity.userName
-                            )
-                        }
-                            ?.map {
-                                ChatUser(
-                                    nickName = it.userEntity.userName,
-                                    profileUrl = BuildConfig.PROFILE_IMAGE_SERVER_URL + it.userEntity.profilePicUrl,
-                                    id = it.userEntity.userName
-                                )
-                            }
+                val loginUser = loginRepository.loginUser
+                val rooms = chatRepository.getAllChatRoomsFlow()
+                return combine(loginUser, rooms) { loginUser, rooms ->
+                    rooms.first { it.roomId == roomId }.chatParticipants.filter {
+                        !TextUtils.equals(
+                            loginUser?.userName,
+                            it.userName
+                        )
+                    }.map {
+                        ChatUser(
+                            nickName = it.userName,
+                            id = it.userId.toString(),
+                            profileUrl = it.profilePicUrl.toString()
+                        )
                     }
+                }
             }
         }
-    }
+        }
 
     @Singleton
     @Provides
     fun provideGetUserOrCreateRoomByUserIdUseCase(
-        chatDao: ChatDao,
         chatRepository: ChatRepository,
     ): GetUserOrCreateRoomByUserIdUseCase {
         return object : GetUserOrCreateRoomByUserIdUseCase {
             override suspend fun invoke(userId: Int): Int {
 
                 //로컬 DB에 1:1 채팅방 있는지 확인
-                var chatUser: ChatRoomWithParticipantsEntity? = chatDao.getChatRoomByUserId(userId)
+                /*var chatUser: ChatRoomWithParticipantsEntity? = chatRepository.getChatRoomByUserId(userId)
 
                 //없다면 서버에 채팅방 생성 요청
                 if (chatUser == null) {
@@ -161,7 +157,8 @@ class ChatUseCaseModule {
                     chatUser = chatDao.getChatRoomByUserId(userId)
                 }
 
-                return chatUser?.chatRoomEntity?.roomId ?: throw Exception("채팅방 생성에 실패하였습니다.")
+                return chatUser?.chatRoomEntity?.roomId ?: throw Exception("채팅방 생성에 실패하였습니다.")*/
+                return 0
             }
         }
     }
@@ -185,7 +182,7 @@ class ChatUseCaseModule {
     ): LoadChatUseCase {
         return object : LoadChatUseCase {
             override suspend fun invoke(roomId: Int) {
-                chatRepository.loadContents(roomId)
+                //chatRepository.loadContents(roomId)
             }
         }
     }
