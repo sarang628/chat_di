@@ -132,7 +132,7 @@ class ChatUseCaseModule {
                         ChatUser(
                             nickName = it.userName,
                             id = it.userId.toString(),
-                            profileUrl = it.profilePicUrl.toString()
+                            profileUrl = BuildConfig.PROFILE_IMAGE_SERVER_URL + it.profilePicUrl.toString()
                         )
                     }
                 }

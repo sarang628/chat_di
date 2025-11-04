@@ -9,10 +9,12 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.annotation.RequiresApi
+import androidx.compose.runtime.CompositionLocalProvider
 import com.sarang.torang.compose.chat.ChatScreen
+import com.sarang.torang.compose.chat.LocalChatImageLoader
 import com.sarang.torang.di.image.provideTorangAsyncImage
-import dagger.hilt.android.AndroidEntryPoint
 import com.sryang.torang.ui.TorangTheme
+import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class ChatActivity : ComponentActivity() {
@@ -26,37 +28,14 @@ class ChatActivity : ComponentActivity() {
 
         setContent {
             TorangTheme {
-                ChatScreen(
-                    onBack = { finish() },
-                    image = provideTorangAsyncImage(),
-                    roomId = roomId,
-                    galleryCompose = {
-                        /*GalleryNavHost(
-                            onNext = {},
-                            onClose = { *//*TODO*//* },
-                            onBack = {},
-                            galleryType = 1
-                        )*/
-                    },
-                    galleryBottomSheetScaffoldCompose =
-                        { _, _, _, _, _ ->
-                            /*GalleryBottomSheet(
-                                imageSelectBottomSheetScaffold = { show, onHidden, sheetContent, content ->
-                                    ImageSelectBottomSheetScaffold(
-                                        show = show,
-                                        onHidden = onHidden,
-                                        imageSelectCompose = sheetContent,
-                                        content = content
-                                    )
-                                },
-                                onSend = onSend,
-                                show = show,
-                                onHidden = onHidden,
-                                onBack = {},
-                                content = content
-                            )*/
-                        }
-                )
+                CompositionLocalProvider(
+                    LocalChatImageLoader provides CustomChatImageLoader
+                ) {
+                    ChatScreen(
+                        onBack = { finish() },
+                        roomId = roomId,
+                    )
+                }
             }
         }
     }
