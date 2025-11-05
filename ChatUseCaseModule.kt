@@ -138,7 +138,7 @@ class ChatUseCaseModule {
                 }
             }
         }
-        }
+    }
 
     @Singleton
     @Provides
