@@ -8,7 +8,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
 import com.sarang.torang.compose.chat.LocalChatImageLoader
 import com.sarang.torang.compose.chatroom.ChatScreen
-import com.sarang.torang.di.image.provideTorangAsyncImage
 import com.sryang.library.pullrefresh.RefreshIndicatorState
 import com.sryang.library.pullrefresh.rememberPullToRefreshState
 import kotlinx.coroutines.launch
