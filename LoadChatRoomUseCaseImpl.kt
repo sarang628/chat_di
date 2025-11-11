@@ -16,7 +16,7 @@ class LoadChatRoomUseCaseImpl {
     fun provideLoadChatRoomUseCase(chatRepository: ChatRepository): LoadChatRoomUseCase {
         return object : LoadChatRoomUseCase {
             override suspend fun invoke() {
-                return chatRepository.refreshAllChatRooms()
+                chatRepository.refreshAllChatRooms()
             }
         }
     }

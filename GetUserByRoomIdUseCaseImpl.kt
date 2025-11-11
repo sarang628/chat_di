@@ -5,7 +5,7 @@ import com.sarang.torang.BuildConfig
 import com.sarang.torang.data.ChatUser
 import com.sarang.torang.repository.ChatRepository
 import com.sarang.torang.repository.LoginRepository
-import com.sarang.torang.usecase.GetUserByRoomIdUseCase
+import com.sarang.torang.usecase.GetUsersByRoomIdUseCase
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -22,8 +22,8 @@ class GetUserByRoomIdUseCaseImpl {
     fun provideGetUserUseCase(
         chatRepository: ChatRepository,
         loginRepository: LoginRepository,
-    ): GetUserByRoomIdUseCase {
-        return object : GetUserByRoomIdUseCase {
+    ): GetUsersByRoomIdUseCase {
+        return object : GetUsersByRoomIdUseCase {
             override fun invoke(roomId: Int): Flow<List<ChatUser>?> {
                 val loginUser = loginRepository.loginUser
                 val rooms = chatRepository.getAllChatRoomsFlow()

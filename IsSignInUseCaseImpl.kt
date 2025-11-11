@@ -20,7 +20,7 @@ class IsSignInUseCaseImpl {
     ): IsSignInUseCase {
         return object : IsSignInUseCase {
             override fun invoke(): Flow<Boolean> {
-                return loggedInUserDao.isLogin().map { it > 0 }
+                return loggedInUserDao.isLoginFlow()
             }
         }
     }

@@ -18,7 +18,7 @@ class LoadChatUseCaseImpl {
     ): LoadChatUseCase {
         return object : LoadChatUseCase {
             override suspend fun invoke(roomId: Int) {
-                //chatRepository.loadContents(roomId)
+                chatRepository.loadChats(roomId)
             }
         }
     }

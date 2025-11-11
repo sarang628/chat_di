@@ -5,7 +5,7 @@ import com.sarang.torang.core.database.dao.LoggedInUserDao
 import com.sarang.torang.data.Chat
 import com.sarang.torang.data.ChatMessage
 import com.sarang.torang.repository.ChatRepository
-import com.sarang.torang.usecase.GetChatUseCase
+import com.sarang.torang.usecase.GetChatsUseCase
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -23,11 +23,11 @@ class GetChatUseCaseImpl {
     fun provideGetChatUseCase(
         chatRepository: ChatRepository,
         loggedInUserDao: LoggedInUserDao,
-    ): GetChatUseCase {
-        return object : GetChatUseCase {
+    ): GetChatsUseCase {
+        return object : GetChatsUseCase {
             override fun invoke(roomId: Int): Flow<List<Chat>> {
                 return chatRepository.getChatsFlow(roomId)
-                    .combine(loggedInUserDao.getLoggedInUser()) { list, loggedInUser ->
+                    .combine(loggedInUserDao.getLoggedInUserFlow()) { list, loggedInUser ->
                         list.map { chatEntity ->
                             chatEntity.toChat(chatEntity.userId == loggedInUser?.userId)
                         }
