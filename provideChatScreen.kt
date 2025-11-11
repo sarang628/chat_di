@@ -7,7 +7,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
 import com.sarang.torang.compose.chat.LocalChatImageLoader
-import com.sarang.torang.compose.chatroom.ChatScreen
+import com.sarang.torang.compose.chatroom.ChatRoomScreen
 import com.sryang.library.pullrefresh.RefreshIndicatorState
 import com.sryang.library.pullrefresh.rememberPullToRefreshState
 import kotlinx.coroutines.launch
@@ -21,7 +21,7 @@ fun provideChatScreen(): @Composable () -> Unit = {
     CompositionLocalProvider(
         LocalChatImageLoader provides CustomChatImageLoader
     ) {
-        ChatScreen(
+        ChatRoomScreen(
             onChat = {
                 context.startActivity(
                     Intent(
