@@ -15,11 +15,11 @@ class DeleteChatRoomUseCaseImpl {
     @Singleton
     @Provides
     fun provideDeleteChatRoomUseCase(
-
+        chatRepository: ChatRepository
     ): DeleteChatRoomUseCase {
         return object : DeleteChatRoomUseCase {
             override suspend fun invoke(roomId: Int) {
-
+                chatRepository.deleteChatRoom(roomId = roomId)
             }
         }
     }
