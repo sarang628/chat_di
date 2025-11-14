@@ -7,9 +7,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
 import com.sarang.torang.compose.chat.LocalChatImageLoader
-import com.sarang.torang.compose.chat.LocalChatPullToRefreshLayout
 import com.sarang.torang.compose.chatroom.ChatRoomScreen
-import com.sarang.torang.di.providePullToRefresh
 import com.sryang.library.pullrefresh.RefreshIndicatorState
 import com.sryang.library.pullrefresh.rememberPullToRefreshState
 import kotlinx.coroutines.launch
@@ -21,8 +19,7 @@ fun provideChatScreen(): @Composable () -> Unit = {
     val dispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
 
     CompositionLocalProvider(
-        LocalChatImageLoader provides CustomChatImageLoader,
-        LocalChatPullToRefreshLayout provides { providePullToRefresh(state = state).invoke(it.isRefreshing, it.onRefresh, it.contents) }
+        LocalChatImageLoader provides CustomChatImageLoader
     ) {
         ChatRoomScreen(
             onChat = {
